@@ -23,8 +23,13 @@ API_HEADERS = {'Accept': 'application/json'}
 
 def get_issue_regex(project):
     """Get project issue regex."""
-    return '^.*(?P<issue_key>{project}-[0-9]+).*$'.format(project=project)
+    return '^.*(?P<issue_key>({project})-[0-9]+).*$'.format(project=project)
 
+
+def get_issue_url(jira_url, issue_key):
+    """Get issue key URL."""
+    return '{url}/browse/{issue}'.format(url=jira_url,
+                                         issue=issue_key)
 
 def get_api_url(jira_url):
     """Get Jira API url."""
@@ -182,10 +187,12 @@ def main():
                     error_text=sanitize(error_message)),
                   file=args.file)
         else:
-            write('"{key}","{summary}","{status}"'.format(
+            write('"{key}","{issue_type}","{summary}","{status}","{url}"'.format(
                         key=sanitize(issue_data['key']),
+                        issue_type=sanitize(issue_data['fields']['issuetype']['name']),
                         summary=sanitize(issue_data['fields']['summary']),
-                        status=sanitize(issue_data['fields']['status']['name'])),
+                        status=sanitize(issue_data['fields']['status']['name']),
+                        url=get_issue_url(args.jira_server, issue_data['key'])),
                   file=args.file)
 
     return 0
