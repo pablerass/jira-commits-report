@@ -1,0 +1,21 @@
+language: python
+python:
+  - "3.5"
+install:
+  - pip install -r requirements.txt -r requirements-dev.txt
+before_script:
+  - flake8 .
+script:
+  - nosetests --with-coverage
+after_success:
+  - coveralls
+deploy:
+  provider: pypi
+  user: pablerass
+  password:
+    secure: tQ8OpILorDkMXBnhh3vEF6Zt7cKJFnYHD4BeqUiWhLikuYj+4WR1QQkOaurNpWdcXumX9PKkjjsoeS6sobQfSViQhLTpnwKwxBKILjZeO9qmsi4yoa6XDz1y6EgP2eL74wI/5GlEM0CXSF3qjAdxAdbfX5jiFNXUJKsRuisAciMXiZ2EC1sonTVnHnNK2W2nw9jhSSVgRmKjAs1G0w+oT6izEH/CATc0jnne5xi9I6yjJnfduJSUF21Hrh2zSmopaBMWB7beFpLIKdaeSBHzUYqus552YRnVsCtyMU3YkWvDKXGxAR4av22Y3PJcaGgpgz36QHm6BImRWZMVYN5iCS6C3m1W6vUNE4Ryxr7nPNOQEstp00xXvuQDEVFxzVVeCXYnt4qjkOCTyyGZjfXY6UKG/wDZ+fNHN+Mk3EEGVy8AWRi5orWPTy2FWprk6PRmEyFjm6Hk526s1dUIwrc5HD3UKK2K+K0DedXe0T/sGy7XHBbD5WKJf260OjmQQl+jLM70bq3SZ3AYeep81hf7sjXHU43beK08vgQLryU+7ICYzflaZzGOOpPWRU1EhE/5Ty84cAkfArfWKqPBRwvvSHEtTvthqmOeaAyAo/K9zdgSF5PYQBDwyMZ6jp33+snKGXWOD0SeZElDa5i0lspIV+kgvif8tN0gRkPkC+c9qFg=
+  on:
+    tags: true
+    branch: master
+    repo: pablerass/redirector
+    distributions: sdist
