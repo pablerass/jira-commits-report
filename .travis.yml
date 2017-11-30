@@ -17,5 +17,5 @@ deploy:
   on:
     tags: true
     branch: master
-    repo: pablerass/redirector
+    repo: pablerass/jira-commits-report
     distributions: sdist
