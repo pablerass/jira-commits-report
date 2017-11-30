@@ -7,18 +7,11 @@ import argparse
 import re
 import requests
 import sys
+from subprocess import Popen, PIPE
+from requests.auth import HTTPBasicAuth
+
 
 __version__ = "1.0"
-
-# TODO: Remove Git módule option as it is unnecessary
-GIT_MODULE = True
-try:
-    from git import Repo
-except:
-    GIT_MODULE = False
-    from subprocess import Popen, PIPE
-
-from requests.auth import HTTPBasicAuth
 
 API_HEADERS = {'Accept': 'application/json'}
 
@@ -32,6 +25,7 @@ def get_issue_url(jira_url, issue_key):
     """Get issue key URL."""
     return '{url}/browse/{issue}'.format(url=jira_url,
                                          issue=issue_key)
+
 
 def get_api_url(jira_url):
     """Get Jira API url."""
@@ -79,19 +73,18 @@ def write(text, file=None):
 
 def __call_git_log(args, repo_path):
     args.extend(['--pretty=oneline'])
-    if GIT_MODULE:
-        repo = Repo.init(repo_path)
-        out = repo.git.log(*args)
-    else:
-        command_args = ['git', 'log']
-        command_args.extend(args)
-        p = Popen(command_args, stdout=PIPE, stderr=PIPE, cwd=repo_path)
-        raw_out, raw_err = p.communicate()
-        out = raw_out.decode()
-        if p.returncode:
-            raise RuntimeError(
-                'Cmd(\'git\') failed due to: exit code({code})\n  cmdline: {cmd}\n  stderr: {out}'.format(
-                    code=p.returncode, cmd=' '.join(command_args), out=raw_err.decode()[:-1]))
+    command_args = ['git', 'log']
+    command_args.extend(args)
+    p = Popen(command_args, stdout=PIPE, stderr=PIPE, cwd=repo_path)
+    raw_out, raw_err = p.communicate()
+    out = raw_out.decode()
+    if p.returncode:
+        raise RuntimeError(
+            ('Cmd(\'git\') failed due to: exit code({code})\n'
+             '  cmdline: {cmd}\n  stderr: {out}').format(
+                code=p.returncode,
+                cmd=' '.join(command_args),
+                out=raw_err.decode()[:-1]))
 
     log_lines = out.splitlines()
     log_line_regex = '^(?P<commit>[^ ]+) (?P<comment>.*)$'
@@ -138,7 +131,7 @@ def sanitize(text):
 
 
 def main():
-    """Main module function."""
+    """Execute module function."""
     # Parse arguments
     parser = argparse.ArgumentParser(
         description='Get issues from git repository commit history')
@@ -185,16 +178,18 @@ def main():
             error_message = issue_data['errorMessages'][0].rstrip('.')
 
             write('"{key}","{error_text}","Error"'.format(
-                    key=sanitize(issue_key),
-                    error_text=sanitize(error_message)),
-                  file=args.file)
+                key=sanitize(issue_key),
+                error_text=sanitize(error_message)),
+                file=args.file)
         else:
-            write('"{key}","{issue_type}","{summary}","{status}","{url}"'.format(
-                        key=sanitize(issue_data['key']),
-                        issue_type=sanitize(issue_data['fields']['issuetype']['name']),
-                        summary=sanitize(issue_data['fields']['summary']),
-                        status=sanitize(issue_data['fields']['status']['name']),
-                        url=get_issue_url(args.jira_server, issue_data['key'])),
+            write('"{key}","{issue_type}","{summary}","{status}","{url}"'.
+                  format(
+                      key=sanitize(issue_data['key']),
+                      issue_type=sanitize(
+                          issue_data['fields']['issuetype']['name']),
+                      summary=sanitize(issue_data['fields']['summary']),
+                      status=sanitize(issue_data['fields']['status']['name']),
+                      url=get_issue_url(args.jira_server, issue_data['key'])),
                   file=args.file)
 
     return 0
