@@ -43,8 +43,8 @@ def get_issue_data(issue_key, url, user=None, password=None):
 
     rest_url = '{api_url}/issue/{key}'.format(api_url=get_api_url(url),
                                               key=issue_key)
-
     response = session.get(rest_url, headers=API_HEADERS)
+    response.raise_for_status()
 
     return response.json()
 
@@ -140,9 +140,10 @@ def main():
                         help='Jira server URL')
     parser.add_argument('-P', '--project', type=str, required=True,
                         help='Jira project id')
-    parser.add_argument('-u', '--jira-user', type=str, help='Jira user')
+    parser.add_argument('-u', '--jira-user', type=str, required=True,
+                        help='Jira user')
     parser.add_argument('-p', '--jira-password', type=str,
-                        help='Jira password')
+                        required=True, help='Jira password')
     parser.add_argument('-r', '--repo-path', type=str, default='.',
                         help='Repository path')
     parser.add_argument('-f', '--file', type=str,
