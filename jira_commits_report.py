@@ -138,14 +138,14 @@ def main():
 
     parser.add_argument('-s', '--jira-server', type=str, required=True,
                         help='Jira server URL')
-    parser.add_argument('-P', '--project', type=str, required=True,
+    parser.add_argument('-P', '--project', type=str, nargs='+',
                         help='Jira project id')
     parser.add_argument('-u', '--jira-user', type=str, required=True,
                         help='Jira user')
     parser.add_argument('-p', '--jira-password', type=str,
                         required=True, help='Jira password')
-    parser.add_argument('-r', '--repo-path', type=str, default='.',
-                        help='Repository path')
+    parser.add_argument('-r', '--repo-path', type=str, nargs='*',
+                        default=['.'], help='Repository path')
     parser.add_argument('-f', '--file', type=str,
                         default=None, help='Output file')
     parser.add_argument('-t', '--type', type=str, choices=['date', 'ref'],
@@ -156,18 +156,20 @@ def main():
     args = parser.parse_args()
 
     # Get commits and write results
+    commits = []
     try:
+        get_commits_function = get_commits_between_refs
         if args.type == 'date':
-            commits = get_commits_between_dates(args.from_value, args.to_value,
-                                                repo_path=args.repo_path)
-        else:
-            commits = get_commits_between_refs(args.from_value, args.to_value,
-                                               repo_path=args.repo_path)
+            get_commits_function = get_commits_between_dates
+
+        for repo_path in args.repo_path:
+            commits.extend(get_commits_function(args.from_value, args.to_value,
+                                                repo_path))
     except Exception as e:
         print(e, file=sys.stderr)
         return 1
 
-    issues = get_commits_issues(args.project, commits)
+    issues = get_commits_issues('|'.join(args.project), commits)
 
     for issue_key in issues:
         issue_data = get_issue_data(issue_key,
