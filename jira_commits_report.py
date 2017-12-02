@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE
 from requests.auth import HTTPBasicAuth
 
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 API_HEADERS = {'Accept': 'application/json'}
 
