@@ -44,7 +44,6 @@ def get_issue_data(issue_key, url, user=None, password=None):
     rest_url = '{api_url}/issue/{key}'.format(api_url=get_api_url(url),
                                               key=issue_key)
     response = session.get(rest_url, headers=API_HEADERS)
-    response.raise_for_status()
 
     return response.json()
 
@@ -170,6 +169,10 @@ def main():
         return 1
 
     issues = get_commits_issues('|'.join(args.project), commits)
+    write(('"key","issue_type","summary","status",'
+           '"resolution","resolution_date","url"'),
+          file=args.file)
+
 
     for issue_key in issues:
         issue_data = get_issue_data(issue_key,
@@ -180,18 +183,24 @@ def main():
         if 'errorMessages' in issue_data:
             error_message = issue_data['errorMessages'][0].rstrip('.')
 
-            write('"{key}","{error_text}","Error"'.format(
+            write('"{key}","Error","{error_text}"'.format(
                 key=sanitize(issue_key),
                 error_text=sanitize(error_message)),
                 file=args.file)
         else:
-            write('"{key}","{issue_type}","{summary}","{status}","{url}"'.
+            write(('"{key}","{issue_type}","{summary}","{status}",'
+                   '"{resolution}","{resolution_date}","{url}"').
                   format(
                       key=sanitize(issue_data['key']),
                       issue_type=sanitize(
                           issue_data['fields']['issuetype']['name']),
                       summary=sanitize(issue_data['fields']['summary']),
                       status=sanitize(issue_data['fields']['status']['name']),
+                      resolution=sanitize(
+                          None if issue_data['fields']['resolution'] is None
+                          else issue_data['fields']['resolution']['name']),
+                      resolution_date=sanitize(
+                          issue_data['fields']['resolutiondate']),
                       url=get_issue_url(args.jira_server, issue_data['key'])),
                   file=args.file)
 
