@@ -18,7 +18,7 @@ from subprocess import Popen, PIPE
 __version__ = "1.2"
 
 API_HEADERS = {'Accept': 'application/json'}
-LIMIT_REQUESTS = 500
+LIMIT_REQUESTS = 50
 
 
 def get_issue_regex(project):
@@ -73,10 +73,10 @@ async def __get_issue_data(session, issue_key, url):
         else:
             issue_data = {
                 'key': issue_key,
-                'error_message': 'Errors getting issue data'.format(
-                    error=response.status)
+                'error_message': 'Errors getting issue data'
             }
-            logger.warn('Error getting "%s" issue', issue_key)
+            logger.warn('Error %s getting "%s" issue',
+                        response.status, issue_key)
 
         return issue_data
 
