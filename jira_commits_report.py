@@ -55,7 +55,8 @@ async def __get_all_issues_data(issues, url, user, password):
     async with ClientSession(connector=TCPConnector(limit=LIMIT_REQUESTS),
                              headers=API_HEADERS, auth=auth) as session:
         for issue in issues:
-            issue_data = asyncio.ensure_future(__get_issue_data(session, issue, url))
+            issue_data = asyncio.ensure_future(
+                __get_issue_data(session, issue, url))
             issues_data.append(issue_data)
         return await asyncio.gather(*issues_data)
 
@@ -67,14 +68,18 @@ async def __get_issue_data(session, issue_key, url):
                                                key=issue_key)
     async with session.get(issue_url) as response:
         logger.info('Getting "%s" issue data', issue_key)
-        issue_data = await response.json()
-        if 'errorMessages' in issue_data:
+        if response.status == 200:
+            issue_data = await response.json()
+        else:
             issue_data = {
                 'key': issue_key,
-                'error_message': issue_data['errorMessages'][0].rstrip('.')
+                'error_message': 'Errors getting issue data'.format(
+                    error=response.status)
             }
             logger.warn('Error getting "%s" issue', issue_key)
+
         return issue_data
+
 
 def get_commits_issues(project, commit_list):
     """Get all unrepeated issues from a commit list."""
