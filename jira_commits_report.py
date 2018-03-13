@@ -8,13 +8,14 @@ from aiohttp import ClientSession, TCPConnector
 from aiohttp.helpers import BasicAuth
 
 import argparse
+import logging
 import re
 import sys
 
 from subprocess import Popen, PIPE
 
 
-__version__ = "1.1"
+__version__ = "1.2"
 
 API_HEADERS = {'Accept': 'application/json'}
 LIMIT_REQUESTS = 500
@@ -61,15 +62,18 @@ async def __get_all_issues_data(issues, url, user, password):
 
 async def __get_issue_data(session, issue_key, url):
     """Get data from an issue."""
+    logger = logging.getLogger('jira_commits_report.get_issue_data')
     issue_url = '{api_url}/issue/{key}'.format(api_url=get_api_url(url),
                                                key=issue_key)
     async with session.get(issue_url) as response:
+        logger.info('Getting "%s" issue data', issue_key)
         issue_data = await response.json()
         if 'errorMessages' in issue_data:
             issue_data = {
                 'key': issue_key,
                 'error_message': issue_data['errorMessages'][0].rstrip('.')
             }
+            logger.warn('Error getting "%s" issue', issue_key)
         return issue_data
 
 def get_commits_issues(project, commit_list):
@@ -151,8 +155,9 @@ def get_commits_between_refs(from_ref=None, to_ref=None, repo_path='.'):
 def sanitize(text):
     """Sanitize a text to insert into a CSV."""
     if text is None:
-        return ''
-    return text.replace('"', '""')
+        return None
+    else:
+        return text.replace('"', '""')
 
 
 def main():
@@ -178,7 +183,18 @@ def main():
     parser.add_argument('--from', dest='from_value', type=str,
                         help='From value')
     parser.add_argument('--to', dest='to_value', type=str, help='To value')
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+                        help="Display verbose output")
     args = parser.parse_args()
+
+    # Logging
+    if args.verbose < 2:
+        logging_format = '%(levelname)s - %(message)s'
+    else:
+        logging_format = '[%(asctime)s] %(levelname)s - %(name)s - %(message)s'
+    logging.basicConfig(stream=sys.stderr, format=logging_format,
+                        level=logging.WARN - args.verbose * 10)
+    logger = logging.getLogger('jira_commits_report')
 
     # Get commits and write results
     commits = []
@@ -195,6 +211,7 @@ def main():
         return 1
 
     issue_keys = get_commits_issues('|'.join(args.project), commits)
+    logger.info('Found "%s" issues', len(issue_keys))
     write(('"key","issue_type","summary","status",'
            '"resolution","resolution_date","url"'),
           file=args.file)
@@ -223,6 +240,7 @@ def main():
                           issue['fields']['resolutiondate']),
                       url=get_issue_url(args.jira_server, issue['key'])),
                   file=args.file)
+        logger.info('Issue "%s" data added to report', issue['key'])
 
     return 0
 
