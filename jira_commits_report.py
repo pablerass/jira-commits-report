@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 import asyncio
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 from aiohttp.helpers import BasicAuth
 
 import argparse
@@ -17,6 +17,7 @@ from subprocess import Popen, PIPE
 __version__ = "1.1"
 
 API_HEADERS = {'Accept': 'application/json'}
+LIMIT_REQUESTS = 500
 
 
 def get_issue_regex(project):
@@ -50,7 +51,8 @@ async def __get_all_issues_data(issues, url, user, password):
         if password is None:
             password = ''
         auth = BasicAuth(user, password)
-    async with ClientSession(headers=API_HEADERS, auth=auth) as session:
+    async with ClientSession(connector=TCPConnector(limit=LIMIT_REQUESTS),
+                             headers=API_HEADERS, auth=auth) as session:
         for issue in issues:
             issue_data = asyncio.ensure_future(__get_issue_data(session, issue, url))
             issues_data.append(issue_data)
